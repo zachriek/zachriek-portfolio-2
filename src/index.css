@@ -1,0 +1,183 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --app-brightness: 100%;
+    --app-scale: 1;
+  }
+
+  body {
+    background-color: #050304;
+    color: #f3efe6;
+    font-family: 'Cinzel', serif;
+    user-select: none;
+    -webkit-user-select: none;
+    overflow: hidden;
+    margin: 0;
+    padding: 0;
+    width: 100vw;
+    height: 100vh;
+  }
+
+  #root {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+  }
+}
+
+.font-cinzel {
+  font-family: 'Cinzel', serif;
+}
+
+.font-marcellus {
+  font-family: 'Marcellus', serif;
+}
+
+.font-decorative {
+  font-family: 'Cinzel Decorative', serif;
+}
+
+/* Glow effects */
+.glow-white {
+  text-shadow: 0 0 8px rgba(255, 255, 255, 0.7), 0 0 18px rgba(255, 255, 255, 0.35);
+}
+
+.glow-selected {
+  text-shadow: 0 0 12px rgba(255, 255, 255, 0.9), 0 0 24px rgba(255, 230, 200, 0.6);
+}
+
+.glow-subtle {
+  text-shadow: 0 0 5px rgba(255, 255, 255, 0.3);
+}
+
+.box-glow {
+  box-shadow: 0 0 20px rgba(240, 150, 60, 0.15), inset 0 0 20px rgba(240, 150, 60, 0.1);
+}
+
+/* ==========================================================================
+   Hollow Knight Silksong Custom Scrollbar
+   ========================================================================== */
+
+/* WebKit-based browsers (Chrome, Edge, Brave, Opera, Safari) */
+::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(10, 5, 8, 0.85);
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.35);
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  transition: all 0.2s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.75);
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
+}
+
+::-webkit-scrollbar-thumb:active {
+  background: #ffffff;
+  box-shadow: 0 0 14px rgba(255, 255, 255, 1);
+}
+
+/* Remove default OS up/down/left/right arrow buttons */
+::-webkit-scrollbar-button {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* Specific class .custom-scrollbar */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: rgba(10, 5, 8, 0.85);
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.35);
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.75);
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
+}
+
+/* Firefox standard scrollbar fallback */
+@supports not selector(::-webkit-scrollbar) {
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.35) rgba(10, 5, 8, 0.85);
+  }
+}
+
+/* Subtle float animation */
+@keyframes floatUp {
+  0% {
+    transform: translateY(0) scale(1);
+    opacity: 0;
+  }
+  20% {
+    opacity: 0.8;
+  }
+  80% {
+    opacity: 0.6;
+  }
+  100% {
+    transform: translateY(-100vh) scale(0.6);
+    opacity: 0;
+  }
+}
+
+@keyframes pulseSubtle {
+  0%, 100% {
+    opacity: 0.9;
+    filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.6));
+  }
+  50% {
+    opacity: 1;
+    filter: drop-shadow(0 0 14px rgba(255, 255, 255, 0.95));
+  }
+}
+
+.animate-pulse-subtle {
+  animation: pulseSubtle 2.5s infinite ease-in-out;
+}
+
+@keyframes flutter {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg) scale(1);
+  }
+  25% {
+    transform: translateY(-4px) rotate(-3deg) scale(1.05);
+  }
+  50% {
+    transform: translateY(-8px) rotate(2deg) scale(0.95);
+  }
+  75% {
+    transform: translateY(-3px) rotate(-1deg) scale(1.02);
+  }
+}
+
+.animate-flutter {
+  animation: flutter 1.2s infinite ease-in-out;
+}
