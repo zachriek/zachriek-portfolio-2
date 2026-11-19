@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { ScreenType, GameSettingsState, defaultSettings, SaveProfile } from './types';
 import { audioManager } from './utils/audio';
 import { EmberCanvas } from './components/EmberCanvas';
@@ -20,9 +20,18 @@ import { ExtrasModal } from './screens/ExtrasModal';
 export function App() {
   const [hasEntered, setHasEntered] = useState(false);
   const [currentScreen, setCurrentScreen] = useState<ScreenType>('title');
+  const [previousScreen, setPreviousScreen] = useState<ScreenType>('title');
   const [settings, setSettings] = useState<GameSettingsState>(defaultSettings);
   const [activeProfile, setActiveProfile] = useState<SaveProfile | null>(null);
   const [isMuted, setIsMuted] = useState(false);
+
+  // Menu Transition States
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  const [fadeState, setFadeState] = useState<'idle' | 'fading-out' | 'fading-in'>('idle');
+
+  const isTransitioningRef = useRef(false);
+  const fadeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const finishTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Once entered, ensure BGM continues playing seamlessly across all menu screens
   useEffect(() => {
@@ -31,10 +40,75 @@ export function App() {
     }
   }, [currentScreen, hasEntered]);
 
-  const handleEnterApp = () => {
-    setHasEntered(true);
-    audioManager.unlockAudio();
-  };
+  // Clean up timeouts on unmount
+  useEffect(() => {
+    return () => {
+      if (fadeTimeoutRef.current) clearTimeout(fadeTimeoutRef.current);
+      if (finishTimeoutRef.current) clearTimeout(finishTimeoutRef.current);
+    };
+  }, []);
+
+  // Block keyboard events during menu transition to prevent glitchy state
+  useEffect(() => {
+    if (!isTransitioning) return;
+    const blockKeys = (e: KeyboardEvent) => {
+      e.stopPropagation();
+    };
+    window.addEventListener('keydown', blockKeys, { capture: true });
+    return () => window.removeEventListener('keydown', blockKeys, { capture: true });
+  }, [isTransitioning]);
+
+  const handleNavigate = useCallback(
+    (targetScreen: ScreenType) => {
+      if (isTransitioningRef.current || targetScreen === currentScreen) {
+        return;
+      }
+
+      isTransitioningRef.current = true;
+      setIsTransitioning(true);
+      setPreviousScreen(currentScreen);
+      setFadeState('fading-out');
+
+      if (fadeTimeoutRef.current) clearTimeout(fadeTimeoutRef.current);
+      if (finishTimeoutRef.current) clearTimeout(finishTimeoutRef.current);
+
+      fadeTimeoutRef.current = setTimeout(() => {
+        setCurrentScreen(targetScreen);
+        setFadeState('fading-in');
+
+        finishTimeoutRef.current = setTimeout(() => {
+          setFadeState('idle');
+          setIsTransitioning(false);
+          isTransitioningRef.current = false;
+        }, 200);
+      }, 200);
+    },
+    [currentScreen]
+  );
+
+  const handleEnterApp = useCallback(() => {
+    if (isTransitioningRef.current) return;
+
+    isTransitioningRef.current = true;
+    setIsTransitioning(true);
+    setFadeState('fading-out');
+
+    if (fadeTimeoutRef.current) clearTimeout(fadeTimeoutRef.current);
+    if (finishTimeoutRef.current) clearTimeout(finishTimeoutRef.current);
+
+    fadeTimeoutRef.current = setTimeout(() => {
+      setHasEntered(true);
+      audioManager.unlockAudio();
+      setCurrentScreen('title');
+      setFadeState('fading-in');
+
+      finishTimeoutRef.current = setTimeout(() => {
+        setFadeState('idle');
+        setIsTransitioning(false);
+        isTransitioningRef.current = false;
+      }, 200);
+    }, 200);
+  }, []);
 
   const handleUpdateSettings = (newSettings: Partial<GameSettingsState>) => {
     setSettings((prev) => ({ ...prev, ...newSettings }));
@@ -100,111 +174,124 @@ export function App() {
         </div>
       )}
 
-      {/* Initial Landing / Start Screen: User interaction unlocks browser audio */}
-      {!hasEntered && (
-        <StartScreen onEnter={handleEnterApp} />
-      )}
+      {/* Screen Viewport with smooth Hollow Knight Fade-in & Fade-out */}
+      <div
+        className={`relative w-full h-full z-20 transition-opacity duration-200 ease-in-out ${
+          fadeState === 'fading-out' ? 'opacity-0 pointer-events-none' : 'opacity-100'
+        }`}
+      >
+        {!hasEntered ? (
+          <StartScreen onEnter={handleEnterApp} />
+        ) : (
+          <>
+            {currentScreen === 'title' && (
+              <MainMenu
+                onNavigate={handleNavigate}
+                onQuit={() => {
+                  if (confirm('Quit to Desktop?')) {
+                    window.close();
+                  }
+                }}
+              />
+            )}
 
-      {/* Main Screens Viewport */}
-      {hasEntered && (
-        <div className="relative w-full h-full z-20">
-          {currentScreen === 'title' && (
-            <MainMenu
-              onNavigate={(screen) => setCurrentScreen(screen)}
-              onQuit={() => {
-                if (confirm('Quit to Desktop?')) {
-                  window.close();
-                }
-              }}
-            />
-          )}
+            {currentScreen === 'soundtrack' && (
+              <SoundtrackMenu
+                onNavigate={handleNavigate}
+                returnScreen={previousScreen || 'title'}
+              />
+            )}
 
-          {currentScreen === 'soundtrack' && (
-            <SoundtrackMenu onNavigate={(screen) => setCurrentScreen(screen)} />
-          )}
+            {currentScreen === 'options' && (
+              <OptionsMenu onNavigate={handleNavigate} />
+            )}
 
-          {currentScreen === 'options' && (
-            <OptionsMenu onNavigate={(screen) => setCurrentScreen(screen)} />
-          )}
+            {currentScreen === 'options_game' && (
+              <GameOptions
+                settings={settings}
+                onUpdateSettings={handleUpdateSettings}
+                onNavigate={handleNavigate}
+              />
+            )}
 
-          {currentScreen === 'options_game' && (
-            <GameOptions
-              settings={settings}
-              onUpdateSettings={handleUpdateSettings}
-              onNavigate={(screen) => setCurrentScreen(screen)}
-            />
-          )}
+            {currentScreen === 'options_audio' && (
+              <AudioOptions
+                settings={settings}
+                onUpdateSettings={handleUpdateSettings}
+                onNavigate={handleNavigate}
+              />
+            )}
 
-          {currentScreen === 'options_audio' && (
-            <AudioOptions
-              settings={settings}
-              onUpdateSettings={handleUpdateSettings}
-              onNavigate={(screen) => setCurrentScreen(screen)}
-            />
-          )}
+            {currentScreen === 'options_video' && (
+              <VideoOptions
+                settings={settings}
+                onUpdateSettings={handleUpdateSettings}
+                onNavigate={handleNavigate}
+              />
+            )}
 
-          {currentScreen === 'options_video' && (
-            <VideoOptions
-              settings={settings}
-              onUpdateSettings={handleUpdateSettings}
-              onNavigate={(screen) => setCurrentScreen(screen)}
-            />
-          )}
+            {currentScreen === 'options_controller' && (
+              <KeybindScreen
+                type="controller"
+                onNavigate={handleNavigate}
+              />
+            )}
 
-          {currentScreen === 'options_controller' && (
-            <KeybindScreen
-              type="controller"
-              onNavigate={(screen) => setCurrentScreen(screen)}
-            />
-          )}
+            {currentScreen === 'options_keyboard' && (
+              <KeybindScreen
+                type="keyboard"
+                onNavigate={handleNavigate}
+              />
+            )}
 
-          {currentScreen === 'options_keyboard' && (
-            <KeybindScreen
-              type="keyboard"
-              onNavigate={(screen) => setCurrentScreen(screen)}
-            />
-          )}
+            {currentScreen === 'screen_scale' && (
+              <ScreenScale
+                settings={settings}
+                onUpdateSettings={handleUpdateSettings}
+                onNavigate={handleNavigate}
+              />
+            )}
 
-          {currentScreen === 'screen_scale' && (
-            <ScreenScale
-              settings={settings}
-              onUpdateSettings={handleUpdateSettings}
-              onNavigate={(screen) => setCurrentScreen(screen)}
-            />
-          )}
+            {currentScreen === 'brightness' && (
+              <BrightnessSetting
+                settings={settings}
+                onUpdateSettings={handleUpdateSettings}
+                onNavigate={handleNavigate}
+              />
+            )}
 
-          {currentScreen === 'brightness' && (
-            <BrightnessSetting
-              settings={settings}
-              onUpdateSettings={handleUpdateSettings}
-              onNavigate={(screen) => setCurrentScreen(screen)}
-            />
-          )}
+            {currentScreen === 'advanced_settings' && (
+              <AdvancedSettings
+                settings={settings}
+                onUpdateSettings={handleUpdateSettings}
+                onNavigate={handleNavigate}
+              />
+            )}
 
-          {currentScreen === 'advanced_settings' && (
-            <AdvancedSettings
-              settings={settings}
-              onUpdateSettings={handleUpdateSettings}
-              onNavigate={(screen) => setCurrentScreen(screen)}
-            />
-          )}
+            {currentScreen === 'select_profile' && (
+              <SelectProfile
+                onSelectSave={handleSelectSave}
+                onNavigate={handleNavigate}
+              />
+            )}
 
-          {currentScreen === 'select_profile' && (
-            <SelectProfile
-              onSelectSave={handleSelectSave}
-              onNavigate={(screen) => setCurrentScreen(screen)}
-            />
-          )}
+            {currentScreen === 'achievements' && (
+              <AchievementsModal onBack={() => handleNavigate('title')} />
+            )}
 
-          {currentScreen === 'achievements' && (
-            <AchievementsModal onBack={() => setCurrentScreen('title')} />
-          )}
+            {currentScreen === 'extras' && (
+              <ExtrasModal onBack={() => handleNavigate('title')} />
+            )}
+          </>
+        )}
+      </div>
 
-          {currentScreen === 'extras' && (
-            <ExtrasModal onBack={() => setCurrentScreen('title')} />
-          )}
-        </div>
-      )}
+      {/* Atmospheric Black Veil Transition Layer */}
+      <div
+        className={`absolute inset-0 bg-[#070406]/70 pointer-events-none z-30 transition-opacity duration-200 ease-in-out ${
+          fadeState === 'fading-out' ? 'opacity-100' : 'opacity-0'
+        }`}
+      />
     </div>
   );
 }

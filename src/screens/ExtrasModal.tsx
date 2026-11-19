@@ -86,7 +86,7 @@ export const ExtrasModal: React.FC<ExtrasModalProps> = ({ onBack }) => {
       <div className="my-auto w-full max-w-2xl flex items-center justify-center p-2 sm:p-4 overflow-y-auto overflow-x-hidden max-h-[55vh] custom-scrollbar">
         {/* Tab 1: Experiences */}
         {tab === 'experiences' && (
-          <div className="w-full space-y-3 sm:space-y-4">
+          <div className="w-full space-y-3 sm:space-y-4 animate-tab-fade-in">
             <div className="p-4 sm:p-5 border border-neutral-800 bg-black/60 space-y-1">
               <span className="font-cinzel text-sm sm:text-base font-semibold tracking-wider text-white uppercase">
                 FRONTEND INTERN
@@ -115,7 +115,7 @@ export const ExtrasModal: React.FC<ExtrasModalProps> = ({ onBack }) => {
 
         {/* Tab 2: Education */}
         {tab === 'education' && (
-          <div className="w-full space-y-3 sm:space-y-4">
+          <div className="w-full space-y-3 sm:space-y-4 animate-tab-fade-in">
             <div className="p-4 sm:p-5 border border-neutral-800 bg-black/60 space-y-1">
               <span className="font-cinzel text-sm sm:text-base font-semibold tracking-wider text-white uppercase">
                 S1 TEKNIK INFORMATIKA
@@ -144,7 +144,7 @@ export const ExtrasModal: React.FC<ExtrasModalProps> = ({ onBack }) => {
 
         {/* Tab 3: Arsenal */}
         {tab === 'arsenal' && (
-          <div className="w-full space-y-3 sm:space-y-4">
+          <div className="w-full space-y-3 sm:space-y-4 animate-tab-fade-in">
             <div className="p-4 sm:p-5 border border-neutral-800 bg-black/60 space-y-2">
               <span className="font-cinzel text-sm sm:text-base font-semibold tracking-wider text-white uppercase">
                 PENETRATION TESTING
